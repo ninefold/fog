@@ -57,20 +57,16 @@ module Fog
 
         # By default, expire in 5 years
         def public_url(expires = (Time.now + 5 * 365 * 24 * 60 * 60))
-          requires :objectid
-          # TODO - more efficient method to get this?
-          storage = Fog::Storage.new(:provider => 'Ninefold')
+          objectid = directory.files.head(key).attributes['x-emc-meta'].scan(/objectid=(\w+),/).flatten[0] if objectid.blank?
           uri = URI::HTTP.build(:scheme => Fog::Storage::Ninefold::STORAGE_SCHEME, :host => Fog::Storage::Ninefold::STORAGE_HOST, :port => Fog::Storage::Ninefold::STORAGE_PORT.to_i, :path => "/rest/objects/#{objectid}" )
-          Fog::Storage.new(:provider => 'Ninefold').uid
-
 
           sb = "GET\n"
           sb += uri.path.downcase + "\n"
-          sb += storage.uid + "\n"
+          sb += connection.uid + "\n"
           sb += String(expires.to_i())
 
-          signature = storage.sign( sb )
-          uri.query = "uid=#{CGI::escape(storage.uid)}&expires=#{expires.to_i()}&signature=#{CGI::escape(signature)}"
+          signature = connection.sign( sb )
+          uri.query = "uid=#{CGI::escape(connection.uid)}&expires=#{expires.to_i()}&signature=#{CGI::escape(signature)}"
           uri.to_s
         end
 
